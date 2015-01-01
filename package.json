@@ -1,0 +1,40 @@
+{
+  "name": "amm-strategy-backtester",
+  "version": "1.0.0",
+  "description": "Write and backtest trading strategies against a multi-agent AMM token market with liquidity and vesting.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "backtesting",
+    "trading-strategy",
+    "trading-strategies",
+    "algorithmic-trading",
+    "crypto-backtest",
+    "amm",
+    "liquidity-pool",
+    "market-simulation",
+    "token",
+    "cryptocurrency",
+    "agent-based-modeling",
+    "market-maker"
+  ],
+  "author": {
+    "name": "JON",
+    "url": "https://github.com/Blustdp"
+  },
+  "license": "ISC",
+  "engines": {
+    "node": ">=14"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Blustdp/amm-strategy-backtester.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Blustdp/amm-strategy-backtester/issues"
+  },
+  "homepage": "https://github.com/Blustdp/amm-strategy-backtester#readme"
+}
