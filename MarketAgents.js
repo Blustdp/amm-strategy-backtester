@@ -2,8 +2,9 @@ import { randRange, randInt, weightedPick } from './rng.js';
 import { Agent } from './Agent.js';
 
 /**
- * Built-in strategy functions. Each receives (agent, context) and
- * returns { action: 'buy' | 'sell' | 'hold', amount }.
+ * Built-in market agent strategy functions.
+ * Each receives (agent, context) and returns
+ * { action: 'buy' | 'sell' | 'hold', amount }.
  *
  * context shape:
  * {
