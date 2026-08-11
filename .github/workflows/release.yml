@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write # required for npm provenance (OIDC)
+  id-token: write   # required for npm provenance (OIDC)
 
 jobs:
   publish:
@@ -19,37 +19,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
-      # This repo doesn't have a build step. Also, `npm ci` can fail if
-      # package-lock.json doesn't match package.json exactly, so use install.
       - name: Install
         run: npm install
-
-      - name: Add LICENSE (ISC) if missing
-        run: |
-          if [ ! -f LICENSE ]; then
-            YEAR="$(date +%Y)"
-            cat > LICENSE <<EOF
-            Copyright (c) $YEAR JON
-
-            Permission to use, copy, modify, and/or distribute this software for any
-            purpose with or without fee is hereby granted, provided that the above
-            copyright notice and this permission notice appear in all copies.
-
-            THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-            WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-            MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-            ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-            WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-            ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING OUT OF OR IN CONNECTION
-            WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-            EOF
-          fi
 
       - name: Publish with provenance
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
