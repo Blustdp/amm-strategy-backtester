@@ -1,62 +1,32 @@
-// WhaleTrader.js
-// "Follow the whales" — but the API deliberately never exposes WHO made a
-// trade or gives strategies visibility into other agents (matching how a
-// real trader can only see aggregate market data, not other accounts'
-// internals). So this strategy approximates whale detection the way a
-// real trader actually would: watching for a volume spike well above the
-// recent average, then following the direction price moved on that spike.
-// A single tick with unusually large volume is treated as "probably a
-// whale," and the strategy buys if price rose on that spike, sells an
-// existing position if price fell on that spike.
+import { HOLD } from './indicators.js';
 
-export class WhaleTraderStrategy {
-  /**
-   * @param {object} config
-   * @param {number} [config.lookback=20]         window for computing average volume
-   * @param {number} [config.spikeMultiple=3]      a tick's volume must exceed avg * this to count as a whale signal
-   * @param {number} [config.buyAmount=1000]       base currency spent per buy
-   */
-  constructor(api, config = {}) {
-    this.api = api;
-    this.config = {
-      lookback: 20,
-      spikeMultiple: 3,
-      buyAmount: 1000,
-      ...config,
-    };
-    this.position = null; // { entryPrice, amount } | null
-  }
+/**
+ * Follow volume spikes: if the latest tick's volume is `spikeMultiple`
+ * times the recent average, buy when price rose on that spike and sell
+ * when it fell. Uses `context.volumeHistory` from TokenSimulator.
+ */
+export function volumeFollow({
+  lookback = 8,
+  spikeMultiple = 3,
+  tradeFraction = 0.25,
+} = {}) {
+  return (agent, context) => {
+    const volumes = context.volumeHistory || [];
+    const prices = context.priceHistory;
+    if (volumes.length < lookback + 1 || prices.length < 2) return HOLD;
 
-  onTick() {
-    const { lookback, spikeMultiple, buyAmount } = this.config;
-    const volumes = this.api.market.getVolumes(lookback + 1);
-    const prices = this.api.market.getPrices(2);
-    if (volumes.length < lookback + 1 || prices.length < 2) return;
+    const latest = volumes[volumes.length - 1];
+    const prior = volumes.slice(-(lookback + 1), -1);
+    const avg = prior.reduce((a, b) => a + b, 0) / prior.length;
+    if (avg <= 0 || latest < avg * spikeMultiple) return HOLD;
 
-    const latestVolume = volumes[volumes.length - 1];
-    const priorVolumes = volumes.slice(0, -1);
-    const avgVolume =
-      priorVolumes.reduce((a, b) => a + b, 0) / priorVolumes.length;
-
-    if (avgVolume <= 0 || latestVolume < avgVolume * spikeMultiple) return; // no whale-sized spike this tick
-
-    const priceMoved = prices[1] - prices[0];
-    const currentPrice = this.api.market.price();
-
-    if (priceMoved > 0 && this.position === null) {
-      // Whale-sized buy pressure — follow it in.
-      const { base } = this.api.wallet.balance();
-      const spend = Math.min(buyAmount, base);
-      if (spend <= 0) return;
-      this.api.trade.buy({ amount: spend });
-      this.position = {
-        entryPrice: currentPrice,
-        amount: spend / currentPrice,
-      };
-    } else if (priceMoved < 0 && this.position !== null) {
-      // Whale-sized sell pressure — exit alongside it.
-      this.api.trade.sell({ amount: this.position.amount });
-      this.position = null;
+    const priceMoved = prices[prices.length - 1] - prices[prices.length - 2];
+    if (priceMoved > 0 && agent.baseBalance > 0) {
+      return { action: 'buy', amount: agent.baseBalance * tradeFraction };
     }
-  }
+    if (priceMoved < 0 && agent.tokenBalance > 0) {
+      return { action: 'sell', amount: agent.tokenBalance * tradeFraction };
+    }
+    return HOLD;
+  };
 }

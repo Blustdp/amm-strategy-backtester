@@ -103,6 +103,7 @@ export class TokenSimulator {
     const context = {
       tick: tickIndex,
       priceHistory: this.priceHistory,
+      volumeHistory: this.volumeHistory,
       currentPrice: this.pool.getPrice(),
       launchPrice: this.launchPrice,
       rng: this.rng,

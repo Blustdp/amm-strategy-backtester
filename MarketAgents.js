@@ -1,5 +1,16 @@
-import { randRange, randInt, weightedPick } from './rng.js';
+import { randRange, weightedPick } from './rng.js';
 import { Agent } from './Agent.js';
+import {
+  rsi,
+  dca,
+  grid,
+  gridBot,
+  movingAverageCrossover,
+  marketMaker,
+  volumeFollow,
+  meanReversion,
+  breakout,
+} from './strategies/index.js';
 
 /**
  * Built-in market agent strategy functions.
@@ -8,7 +19,7 @@ import { Agent } from './Agent.js';
  *
  * context shape:
  * {
- *   tick, priceHistory: number[], currentPrice, launchPrice, rng
+ *   tick, priceHistory, volumeHistory, currentPrice, launchPrice, rng
  * }
  */
 
@@ -93,6 +104,16 @@ export const strategies = {
       return { action: 'hold', amount: 0 };
     };
   },
+
+  rsi,
+  dca,
+  grid,
+  gridBot,
+  movingAverageCrossover,
+  marketMaker,
+  volumeFollow,
+  meanReversion,
+  breakout,
 };
 
 /**

@@ -1,79 +1,64 @@
-// GridBot.js
-// Places a grid of price levels around a center price, spaced by
-// `gridSpacingPct`. Each level tracks its own fill state: if price falls
-// to or below a buy level that hasn't been filled, buy a fixed amount at
-// that level; once filled, that level flips to watching for the level
-// ABOVE it to sell into (capturing the spacing as profit), then resets
-// to buy-watching again once sold. This is the standard grid-trading
-// pattern: profit from oscillation within a range, not from a directional bet.
+import { HOLD } from './indicators.js';
 
-export class GridBotStrategy {
-  /**
-   * @param {object} config
-   * @param {number} [config.centerPrice]        grid center; defaults to price at first tick if omitted
-   * @param {number} [config.gridSpacingPct=0.05] spacing between levels, as a fraction (0.05 = 5%)
-   * @param {number} [config.gridLevels=5]         number of levels above AND below center
-   * @param {number} [config.amountPerLevel=100]   base currency spent per buy at each level
-   */
-  constructor(api, config = {}) {
-    this.api = api;
-    this.config = { gridSpacingPct: 0.05, gridLevels: 5, amountPerLevel: 100, ...config };
-    this.levels = null; // built lazily on first tick once we know the center price
-  }
+/**
+ * Grid around launch price. Buys at levels below center, takes profit
+ * one spacing above the fill. Per-agent grid state is kept in a Map
+ * keyed by `agent.id` (one decision per tick).
+ */
+export function grid({
+  gridSpacingPct = 0.05,
+  gridLevels = 4,
+  amountPerLevelFraction = 0.15,
+} = {}) {
+  const state = new Map();
 
-  _buildLevels(centerPrice) {
-    const { gridSpacingPct, gridLevels } = this.config;
+  function buildLevels(center) {
     const levels = [];
     for (let i = -gridLevels; i <= gridLevels; i++) {
-      if (i === 0) continue; // no level exactly at center
+      if (i === 0) continue;
       levels.push({
-        price: centerPrice * (1 + i * gridSpacingPct),
-        direction: i < 0 ? 'buy' : 'sell', // levels below center are buy levels, above are sell levels
-        filled: false, // for buy levels: has this level bought and is waiting to sell higher?
-        amount: null, // tokens bought at this level, once filled
+        price: center * (1 + i * gridSpacingPct),
+        side: i < 0 ? 'buy' : 'sell',
+        filled: false,
+        tokens: 0,
       });
     }
     return levels.sort((a, b) => a.price - b.price);
   }
 
-  onTick() {
-    const currentPrice = this.api.market.price();
-    if (!this.levels) {
-      this.levels = this._buildLevels(this.config.centerPrice ?? currentPrice);
+  return (agent, context) => {
+    let gridState = state.get(agent.id);
+    if (!gridState) {
+      gridState = { levels: buildLevels(context.launchPrice || context.currentPrice) };
+      state.set(agent.id, gridState);
     }
 
-    const { amountPerLevel } = this.config;
+    const { currentPrice } = context;
 
-    for (const level of this.levels) {
-      if (level.direction === 'buy' && !level.filled && currentPrice <= level.price) {
-        const { base } = this.api.wallet.balance();
-        const spend = Math.min(amountPerLevel, base);
+    for (const level of gridState.levels) {
+      if (level.side === 'buy' && !level.filled && currentPrice <= level.price && agent.baseBalance > 0) {
+        const spend = agent.baseBalance * amountPerLevelFraction;
         if (spend <= 0) continue;
-        this.api.trade.buy({ amount: spend });
         level.filled = true;
-        level.amount = spend / currentPrice;
-        return; // one order per tick, mirroring how a real exchange fills one order at a time
-      }
-      if (level.direction === 'sell' && !level.filled && currentPrice >= level.price) {
-        // A sell-side grid level with nothing bought yet has nothing to sell —
-        // in a full implementation this would open a short; unsupported here,
-        // so sell levels only activate once a corresponding buy has filled
-        // (handled by the next block instead). Left intentionally inert.
-        continue;
+        level.tokens = spend / currentPrice;
+        return { action: 'buy', amount: spend };
       }
     }
 
-    // Check filled buy levels for a take-profit at the next level up.
-    for (const level of this.levels) {
-      if (level.direction === 'buy' && level.filled) {
-        const targetSellPrice = level.price * (1 + this.config.gridSpacingPct);
-        if (currentPrice >= targetSellPrice) {
-          this.api.trade.sell({ amount: level.amount });
-          level.filled = false; // reset so this level can buy again on the next dip
-          level.amount = null;
-          return;
+    for (const level of gridState.levels) {
+      if (level.side === 'buy' && level.filled && agent.tokenBalance > 0) {
+        const target = level.price * (1 + gridSpacingPct);
+        if (currentPrice >= target) {
+          const amount = Math.min(level.tokens, agent.tokenBalance);
+          level.filled = false;
+          level.tokens = 0;
+          return { action: 'sell', amount };
         }
       }
     }
-  }
+
+    return HOLD;
+  };
 }
+
+export { grid as gridBot };

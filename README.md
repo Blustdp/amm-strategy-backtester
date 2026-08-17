@@ -22,6 +22,7 @@ Implement a strategy that returns buy/sell/hold decisions each tick, plug it int
 
 - Write custom trading strategies and backtest them over hundreds of ticks
 - Mix your strategy into a population with built-in whale / bot / retail agents
+- Extra factories: RSI, DCA, grid, MA crossover, market maker, volume-follow, mean reversion, breakout
 - Constant-product AMM pool with swap fees and price impact
 - Token vesting schedules (TGE, cliffs, linear unlocks) that drive circulating supply
 - Seeded RNG for reproducible runs
@@ -64,6 +65,7 @@ Strategies are factories that return a decision function:
 
 - `tick`, `currentPrice`, `launchPrice`
 - `priceHistory` — prices from prior ticks
+- `volumeHistory` — base-currency volume from prior ticks
 - `rng` — seeded RNG from the simulator
 
 Return `hold` with `amount: 0` during indicator warm-up or when there is no trade.
@@ -227,13 +229,43 @@ Each archetype entry supports:
 
 ## Built-in Strategies
 
-Background market participants exported via `strategies`:
+All factories live on `strategies` and return `(agent, context) => decision`.
+
+**Background market (also used by `defaultArchetypes()`):**
 
 - `strategies.whale()` — large early buys and profit-taking dumps
 - `strategies.bot()` — sniping and quick flipping
 - `strategies.retail()` — momentum-driven retail trading
 
-Use these as the competing population while you backtest your own strategy. `defaultArchetypes()` returns a ready-made whale / bot / retail mix.
+**Technical / systematic (opt-in — mix them into `archetypes`):**
+
+- `strategies.rsi()` — buy oversold, sell overbought
+- `strategies.dca()` — buy a fixed slice of starting capital every N ticks
+- `strategies.grid()` — buy dips on a price grid, take profit one spacing up
+- `strategies.movingAverageCrossover()` — short/long MA cross with stop-loss / take-profit
+- `strategies.marketMaker()` — buy, sell after a small spread, repeat
+- `strategies.volumeFollow()` — trade in the direction of a volume spike
+- `strategies.meanReversion()` — buy below SMA − k·σ, sell above SMA + k·σ
+- `strategies.breakout()` — buy a lookback high, sell a lookback low
+
+`defaultArchetypes()` is still whale / bot / retail so existing seeded runs stay comparable. Plug a new factory in like this:
+
+```javascript
+import { TokenSimulator, strategies, defaultArchetypes } from 'amm-strategy-backtester';
+
+const archetypes = [
+  {
+    type: 'rsi',
+    weight: 25,
+    balanceRange: [500, 3000],
+    strategy: strategies.rsi({ period: 10, oversold: 35 }),
+  },
+  ...defaultArchetypes(),
+];
+
+const results = new TokenSimulator({ seed: 42, agentCount: 200, archetypes }).run();
+console.log(results.agentSummary);
+```
 
 ## API Reference
 
@@ -272,7 +304,7 @@ Use these as the competing population while you backtest your own strategy. `def
 amm-strategy-backtester/
 ├── Agent.js
 ├── AMMPool.js
-├── MarketAgents.js      # whale / bot / retail strategies + population helpers
+├── MarketAgents.js      # strategies object + population helpers
 ├── TokenSimulator.js    # backtest orchestration
 ├── VestingSchedule.js
 ├── defaultConfig.js
@@ -280,14 +312,17 @@ amm-strategy-backtester/
 ├── package.json
 ├── README.md
 ├── rng.js
-└── strategies/          # experimental class-based strategy sketches (not the primary API)
+└── strategies/          # RSI, DCA, grid, MA, MM, volume-follow, mean reversion, breakout
     ├── index.js
+    ├── indicators.js
+    ├── Breakout.js
     ├── DCA.js
     ├── GridBot.js
     ├── MarketMaker.js
+    ├── MeanReversion.js
     ├── MovingAverageCrossover.js
     ├── RSI.js
-    └── WhaleTrader.js
+    └── WhaleTrader.js   # volumeFollow()
 ```
 
 ## Contributing
