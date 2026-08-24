@@ -36,5 +36,8 @@
   "bugs": {
     "url": "https://github.com/Blustdp/amm-strategy-backtester/issues"
   },
-  "homepage": "https://github.com/Blustdp/amm-strategy-backtester#readme"
+  "homepage": "https://www.backtestamm.com",
+  "devDependencies": {
+    "wrangler": "^4.125.0"
+  }
 }
