@@ -1,6 +1,6 @@
 {
   "name": "amm-strategy-backtester",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Write and backtest trading strategies against a multi-agent AMM token market with liquidity and vesting.",
   "main": "index.js",
   "scripts": {
