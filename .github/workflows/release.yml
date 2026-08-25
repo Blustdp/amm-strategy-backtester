@@ -40,7 +40,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           if npm view "${{ github.event.repository.name }}@$VERSION" version 2>/dev/null; then
-            echo "Version $VERSION is already on npm. Bump package.json and push a new tag (e.g. v1.1.1)."
+            echo "Version $VERSION is already on npm. Bump package.json and push a new tag (e.g. v1.1.3)."
             exit 1
           fi
           echo "Version $VERSION is available to publish"
