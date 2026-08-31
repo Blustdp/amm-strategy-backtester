@@ -1,0 +1,35 @@
+# Ignore test files
+test/
+tests/
+
+# Ignore documentation
+docs/
+.github/
+
+# Ignore screenshots
+screenshots/
+
+# Ignore logs
+*.log
+
+# Ignore editor settings
+.vscode/
+.idea/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore coverage reports
+coverage/
+
+# Ignore temporary files
+tmp/
+temp/
+
+# Ignore debug files
+*.tmp

@@ -1,10 +1,27 @@
 {
   "name": "amm-strategy-backtester",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Write and backtest trading strategies against a multi-agent AMM token market with liquidity and vesting.",
   "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "Agent.js",
+    "AMMPool.js",
+    "MarketAgents.js",
+    "TokenSimulator.js",
+    "VestingSchedule.js",
+    "rng.js",
+    "strategies",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
-    "test": "node test/smoke.js"
+    "test": "node test/smoke.js",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "backtesting",
@@ -26,9 +43,8 @@
   },
   "license": "ISC",
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   },
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Blustdp/amm-strategy-backtester.git"
@@ -36,8 +52,5 @@
   "bugs": {
     "url": "https://github.com/Blustdp/amm-strategy-backtester/issues"
   },
-  "homepage": "https://www.backtestamm.com",
-  "devDependencies": {
-    "wrangler": "^4.125.0"
-  }
+  "homepage": "https://github.com/Blustdp/amm-strategy-backtester#readme"
 }

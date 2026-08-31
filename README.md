@@ -312,6 +312,10 @@ amm-strategy-backtester/
 ├── package.json
 ├── README.md
 ├── rng.js
+├── examples/
+│   └── run-backtest.js
+├── test/
+│   └── smoke.js
 └── strategies/          # RSI, DCA, grid, MA, MM, volume-follow, mean reversion, breakout
     ├── index.js
     ├── indicators.js

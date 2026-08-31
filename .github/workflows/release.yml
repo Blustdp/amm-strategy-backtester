@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write   # required for npm provenance (OIDC)
+  id-token: write
 
 jobs:
   publish:
@@ -22,25 +22,28 @@ jobs:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install
-        run: npm install
-
       - name: Set version from tag
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG#v}"
           if [ -z "$VERSION" ] || [ "$VERSION" = "$TAG" ]; then
-            echo "Tag must look like v1.1.3 (got: $TAG)"
+            echo "Tag must look like v1.1.4 (got: $TAG)"
             exit 1
           fi
           npm pkg set "version=$VERSION"
           echo "Publishing version $VERSION"
 
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
       - name: Check version is not already published
         run: |
           VERSION=$(node -p "require('./package.json').version")
           if npm view "${{ github.event.repository.name }}@$VERSION" version 2>/dev/null; then
-            echo "Version $VERSION is already on npm. Bump package.json and push a new tag (e.g. v1.1.3)."
+            echo "Version $VERSION is already on npm. Bump package.json and push a new tag."
             exit 1
           fi
           echo "Version $VERSION is available to publish"
